@@ -5,8 +5,8 @@ using UnityEngine;
 
 public class Rocket : MonoBehaviour
 {
-    public int thrustPower = 12;
-    public int rotationSpeed = 90;
+    [SerializeField] float thrustPower = 120f;
+    [SerializeField] float rotationSpeed = 120f;
     private Transform initialTransform;
     private Vector3 thrustVector;
 
@@ -24,32 +24,41 @@ public class Rocket : MonoBehaviour
 
     // Update is called once per frame
     void Update() {
-        Process_Input();
+        HandleThrust();
+        HandleRotation();
     }
 
-    private void Process_Input() {
-
+    private void HandleThrust() {
         if (Input.GetKey(KeyCode.Space)) {
             rigidBody.AddRelativeForce(thrustVector);
-            if (!engineSound.isPlaying) { 
+            if (!engineSound.isPlaying) {
                 engineSound.Play();
             }
         } else {
             engineSound.Stop();
         }
+    }
 
-        if (Input.GetKey(KeyCode.A) & !Input.GetKey(KeyCode.D)) {
+    private void HandleRotation() {
+
+        if (Input.GetKey(KeyCode.LeftArrow) & !Input.GetKey(KeyCode.RightArrow)) {
             transform.Rotate(Vector3.forward, rotationSpeed * Time.deltaTime);
         }
 
-        if (Input.GetKey(KeyCode.D) & !Input.GetKey(KeyCode.A)) {
+        if (Input.GetKey(KeyCode.RightArrow) & !Input.GetKey(KeyCode.LeftArrow)) {
             transform.Rotate(-Vector3.forward, rotationSpeed * Time.deltaTime);
         }
+   }
 
-        if (Input.GetKey(KeyCode.R)) {
-            print("Resetting.....");
-            transform.localRotation = initialTransform.rotation;
-            transform.localPosition = initialTransform.position;
+    private void OnCollisionEnter(Collision collision) {
+        switch (collision.gameObject.tag) {
+            case "Safe":
+                print("Safe collision");
+                break;
+            default:
+                print("You  Dead!!!!!");
+                break;
         }
     }
+
 }
