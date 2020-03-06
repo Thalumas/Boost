@@ -1,41 +1,62 @@
-﻿using System;
-using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
+﻿using UnityEngine;
+using UnityEngine.SceneManagement;
 
 public class Rocket : MonoBehaviour
 {
     [SerializeField] float thrustPower = 120f;
-    [SerializeField] float rotationSpeed = 120f;
+    [SerializeField] float rotationSpeed = 200f;
+    [SerializeField] AudioClip engine;
+    [SerializeField] AudioClip explosion;
+    [SerializeField] AudioClip levelComplete;
+
+    [SerializeField] ParticleSystem leftEngineParticles;
+    [SerializeField] ParticleSystem rightEngineParticles;
+    [SerializeField] ParticleSystem deathParticles;
+    [SerializeField] ParticleSystem completeParticles;
+
     private Transform initialTransform;
     private Vector3 thrustVector;
+    [SerializeField] int level;
+
+    enum State { ALIVE, DIEING, TRANSITIONING};
+    State state = State.ALIVE;
 
     Rigidbody rigidBody;
-    AudioSource engineSound;
+    AudioSource audioSource;
 
     // Start is called before the first frame update
     void Start()
     {
         initialTransform = transform;
         rigidBody = GetComponent<Rigidbody>();
-        engineSound = GetComponent<AudioSource>();
+        audioSource = GetComponent<AudioSource>();
         thrustVector = Vector3.up * thrustPower;
     }
 
     // Update is called once per frame
     void Update() {
-        HandleThrust();
-        HandleRotation();
+        if (state == State.ALIVE) {
+            HandleThrust();
+            HandleRotation();
+        }
     }
 
     private void HandleThrust() {
         if (Input.GetKey(KeyCode.Space)) {
             rigidBody.AddRelativeForce(thrustVector);
-            if (!engineSound.isPlaying) {
-                engineSound.Play();
+            if (!leftEngineParticles.isPlaying) {
+                leftEngineParticles.Play();
+            }
+            if (!rightEngineParticles.isPlaying) {
+                rightEngineParticles.Play();
+            }
+            if (!audioSource.isPlaying) {
+                audioSource.PlayOneShot(engine);
             }
         } else {
-            engineSound.Stop();
+            audioSource.Stop();
+            leftEngineParticles.Stop();
+            rightEngineParticles.Stop();
         }
     }
 
@@ -50,15 +71,38 @@ public class Rocket : MonoBehaviour
         }
    }
 
-    private void OnCollisionEnter(Collision collision) {
-        switch (collision.gameObject.tag) {
-            case "Safe":
-                print("Safe collision");
-                break;
-            default:
-                print("You  Dead!!!!!");
-                break;
+    public void OnCollisionEnter(Collision collision) {
+        if (state == State.ALIVE) {
+            switch (collision.gameObject.tag) {
+                case "Safe":
+                    print("Safe collision");
+                    break;
+                case "LandingPad":
+                    audioSource.Stop();
+                    audioSource.PlayOneShot(levelComplete);
+                    completeParticles.Play();
+                    state = State.TRANSITIONING;
+                    Invoke("LevelComplete", 2f);
+                    break;
+                default:
+                    state = State.DIEING;
+                    audioSource.Stop();
+                    audioSource.PlayOneShot(explosion);
+                    deathParticles.Play();
+                    Invoke("Die", 1f);
+                    break;
+            }
         }
     }
 
+    private void LevelComplete() {
+        SceneManager.LoadScene(level + 1);
+    }
+
+    private void Die() {
+        if (audioSource.isPlaying) {
+            audioSource.Stop();
+        }
+        SceneManager.LoadScene(level);
+    }
 }
