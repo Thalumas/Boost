@@ -79,6 +79,8 @@ public class Rocket : MonoBehaviour
                     break;
                 case "LandingPad":
                     audioSource.Stop();
+                    leftEngineParticles.Stop();
+                    rightEngineParticles.Stop();
                     audioSource.PlayOneShot(levelComplete);
                     completeParticles.Play();
                     state = State.TRANSITIONING;
